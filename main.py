@@ -18,8 +18,13 @@ from watchdog import WatchDogMode
 import pwmio
 from adafruit_motor import servo
 
-# create a PWMOut object on Pin A2.
-pwm = pwmio.PWMOut(board.A2, duty_cycle=2 ** 15, frequency=50)
+RESOLUTION = 0  # Only change on every nth position.
+INCREMENT_PER_ENCODER_TICK = 2
+UPPER_AZIMUTH_LIMIT = 180
+LOWER_AZIMUTH_LIMIT = 0
+
+# create a PWMOut object on Pin A15.
+pwm = pwmio.PWMOut(board.A15, duty_cycle=2 ** 15, frequency=50)
 
 # Create a servo object, my_servo.
 fan_servo = servo.Servo(pwm)
@@ -49,7 +54,6 @@ pixel_pin = board.D13
 # pixel_pin = board.D18
 
 
-RESOLUTION = 0  # Only change on every nth position.
 
 
 class Knob():
@@ -71,27 +75,29 @@ class Knob():
     def update(self):
         position = -self.encoder.position
         if position > self.last_position:
-            print(f"Position increased to: {position}, diff {position - self.last_position}")
+            # print(f"Position increased to: {position}, diff {position - self.last_position}")
             if ((position - self.last_change) > RESOLUTION):
-                print("ADD "*15)
-                self.azimuth += 1
+                # print("ADD "*15)
+                self.azimuth += INCREMENT_PER_ENCODER_TICK
                 self.last_change = position
-            if self.azimuth > 180:
-                print("Knob attempting to pass upper limit.")
-                self.azimuth = 180
+            if self.azimuth > UPPER_AZIMUTH_LIMIT:
+                # print("Knob attempting to pass upper limit.")
+                self.azimuth = UPPER_AZIMUTH_LIMIT
             print(f"Azimuth = {self.azimuth}")
             self.last_position = position
+            self.servo.angle = self.azimuth
         elif position < self.last_position:
-            print(f"Position decreased to: {position}, diff {self.last_position - position}")
+            # print(f"Position decreased to: {position}, diff {self.last_position - position}")
             if ((self.last_change - position) > RESOLUTION):
-                print("REMOVE "*15)
-                self.azimuth -= 1
+                # print("REMOVE "*15)
+                self.azimuth -= INCREMENT_PER_ENCODER_TICK
                 self.last_change = position
-            if self.azimuth < 0:
-                print("Knob attempting to pass lower limit.")
-                self.azimuth = 0
+            if self.azimuth < LOWER_AZIMUTH_LIMIT:
+                # print("Knob attempting to pass lower limit.")
+                self.azimuth = LOWER_AZIMUTH_LIMIT
             print(f"Azimuth = {self.azimuth}")
             self.last_position = position
+            self.servo.angle = self.azimuth
 
 
 
